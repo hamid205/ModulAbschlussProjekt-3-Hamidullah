@@ -1,6 +1,7 @@
-from editaduser_TN import EditADUserWindow
-from database import DatabaseHandler  
-from login import LoginDialog
+# Importieren der benötigten Module und Klassen
+from editaduser_TN import EditADUserWindow  # Fenster zum Bearbeiten eines AD-Users
+from database import DatabaseHandler        # Datenbank-Verbindung und -Operationen
+from login import LoginDialog                # Login-Dialogfenster
 import sys
 import os
 import csv
@@ -27,6 +28,7 @@ class MainWindow(QMainWindow):
     def __init__(self):
         super().__init__()
 
+        # Definition von Menüs, Menüoptionen und Toolbar-Buttons
         self.mainmenue = {1: "&Datei", 2: "&Active Directory", 4:"&Hilfe"}
         self.menueoptions= {
             11:"Import von CSV", 12:"Transfer nach AD", 13: "Einloggen", 14:"Ausloggen",
@@ -43,6 +45,8 @@ class MainWindow(QMainWindow):
     def initUI(self):
         self.setWindowTitle("myAdmin Center")
         self.setWindowIcon(QIcon(".\\images\\logo-zm.png"))
+        
+        # Menüleiste erstellen
         menubar = self.menuBar()
         for menu_id, menu_title in self.mainmenue.items():
             menu = menubar.addMenu(menu_title)
@@ -55,6 +59,7 @@ class MainWindow(QMainWindow):
                     action.triggered.connect(self.menue_clicked)
                     menu.addAction(action)
 
+        # Toolbar erstellen
         toolbar = QToolBar("Hauptwerkzeugleiste")
         self.addToolBar(toolbar)
         for command, caption in self.toolbarbuttons.items():
@@ -73,7 +78,7 @@ class MainWindow(QMainWindow):
                 btn.clicked.connect(self.menue_clicked)
                 toolbar.addWidget(btn)
 
-        self.statusBar().showMessage("Ausgeloggt")
+        self.statusBar().showMessage("Ausgeloggt")  # Anfangsstatus: ausgeloggt
         self.dock = QDockWidget("Dock", self)
         self.dock.setWidget(QTextEdit("Zeigt Hilfe"))
         self.addDockWidget(Qt.DockWidgetArea.LeftDockWidgetArea, self.dock)
@@ -83,16 +88,19 @@ class MainWindow(QMainWindow):
         self.setCentralWidget(central_widget)
         central_layout = QVBoxLayout(central_widget)
 
+        # Tabelle zur Anzeige der Interessenten/AD-User
         self.table_interessenten = QTableWidget()
         self.table_interessenten.setEditTriggers(QAbstractItemView.EditTrigger.NoEditTriggers)
-        self.table_interessenten.doubleClicked.connect(self.editaduser)        
+        self.table_interessenten.doubleClicked.connect(self.editaduser)  # Bearbeiten bei Doppelklick
         self.table_interessenten.setSelectionBehavior(QTableWidget.SelectionBehavior.SelectRows)
         self.table_interessenten.setSelectionMode(QTableWidget.SelectionMode.SingleSelection)
         central_layout.addWidget(self.table_interessenten)
+
         self.resize(800, 600)
         self.show()
 
     def editaduser(self):
+        # Benutzer bearbeiten (User Story 3.1 b)
         selection = self.table_interessenten.selectedItems()
         if selection:
             row = selection[0].row()
@@ -104,6 +112,7 @@ class MainWindow(QMainWindow):
             QMessageBox.warning(self, "Fehler", "Kein Eintrag ausgewählt!")
 
     def delete_ad_user(self):
+        # AD-User löschen (Button Lösche AD-User)
         selection = self.table_interessenten.selectedItems()
         if not selection:
             QMessageBox.warning(self, "Fehler", "Kein Eintrag ausgewählt!")
@@ -129,6 +138,7 @@ class MainWindow(QMainWindow):
                 QMessageBox.critical(self, "Fehler", f"Fehler beim Löschen:\n{e}")
 
     def deactivate_ad_user(self):
+        # AD-User deaktivieren (Button Inaktiv AD-User)
         selection = self.table_interessenten.selectedItems()
         if not selection:
             QMessageBox.warning(self, "Fehler", "Kein Eintrag ausgewählt!")
@@ -154,6 +164,7 @@ class MainWindow(QMainWindow):
                 QMessageBox.critical(self, "Fehler", f"Fehler beim Deaktivieren:\n{e}")
 
     def transfer_to_ad(self):
+        # Transfer nach Active Directory (CSV-Export und Netzwerkkopie) (User Story 2b)
         if not hasattr(self, 'db_handler') or self.db_handler is None:
             QMessageBox.warning(self, "Fehler", "Bitte zuerst einloggen!")
             return
@@ -178,6 +189,7 @@ class MainWindow(QMainWindow):
             QMessageBox.critical(self, "Fehler", f"Fehler beim Transfer:\n{e}")
 
     def menue_clicked(self):
+        # Verarbeitet die Menü- und Toolbar-Button-Clicks
         men = self.sender()
         print(f"Menu {men.property('command')} selected")
         match men.property("command")[0]:
@@ -194,13 +206,14 @@ class MainWindow(QMainWindow):
             case 41:
                 self.menue_help_about()
             case 13:
-                self.menu_login()
+                self.menu_login()  # Einloggen (User Story 1.1)
             case 14:
-                self.logout_database()
+                self.logout_database()  # Ausloggen (User Story 1.2)
             case 11:
-                self.menue_csv_import()
+                self.menue_csv_import()  # CSV-Import (User Story 2)
 
     def menu_login(self):
+        # Benutzer meldet sich an (User Story 1.1 a/b/c)
         dlg = LoginDialog(self)
         if dlg.exec():
             self.db_handler = dlg.get_db_handler()
@@ -208,6 +221,7 @@ class MainWindow(QMainWindow):
             self.load_ad_users()
 
     def logout_database(self):
+        # Benutzer meldet sich ab (User Story 1.2)
         if self.db_handler:
             self.db_handler.close_connection()
             self.db_handler = None
@@ -217,6 +231,7 @@ class MainWindow(QMainWindow):
         self.statusBar().showMessage("Ausgeloggt")
 
     def load_ad_users(self):
+        # Lädt die Benutzerliste aus der Datenbank (User Story 3.1 a)
         if not hasattr(self, 'db_handler') or self.db_handler is None:
             QMessageBox.warning(self, "Fehler", "Keine Datenbankverbindung!")
             return
@@ -237,6 +252,7 @@ class MainWindow(QMainWindow):
             QMessageBox.critical(self, "Fehler", f"Fehler beim Laden der Daten:\n{e}")
 
     def menue_csv_import(self):
+        # CSV-Import von Interessenten (User Story 2 a/b)
         if not hasattr(self, 'db_handler') or self.db_handler is None:
             QMessageBox.warning(self, "Fehler", "Bitte zuerst einloggen!")
             return
@@ -251,7 +267,7 @@ class MainWindow(QMainWindow):
                 for row in reader:
                     firstname = row['firstname']
                     lastname = row['lastname']
-                    username = (firstname + "." + lastname).lower()  # <-- Hier korrigiert
+                    username = (firstname + "." + lastname).lower()
                     email = f"{firstname.lower()}.{lastname.lower()}@M-zukunftsmotor.local"
                     kurs_id = int(row['kurs'])
                     status_id = int(row['status_id_fk'])
@@ -260,12 +276,9 @@ class MainWindow(QMainWindow):
                     existing = self.db_handler.get_data(check_query)
 
                     if existing:
-                        update_query = """
-                            UPDATE aduser SET firstname=%s, lastname=%s, email=%s, phone=%s,
+                        update_query = """UPDATE aduser SET firstname=%s, lastname=%s, email=%s, phone=%s,
                                 department=%s, street=%s, city=%s, city_code=%s, postalcode=%s,
-                                status_id_fk=%s, ou_id_fk=%s, modified=NOW()
-                            WHERE username=%s
-                        """
+                                status_id_fk=%s, ou_id_fk=%s, modified=NOW() WHERE username=%s"""
                         values = (
                             firstname, lastname, email, row['phone'], row['abteilung'],
                             row['street'], row['city'], row['city_code'], row['postalcode'],
@@ -273,11 +286,8 @@ class MainWindow(QMainWindow):
                         )
                         self.db_handler.change_data(update_query, values)
                     else:
-                        insert_query = """
-                            INSERT INTO aduser (firstname, lastname, username, email, phone, department, street,
-                                city, city_code, postalcode, status_id_fk, ou_id_fk)
-                            VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
-                        """
+                        insert_query = """INSERT INTO aduser (firstname, lastname, username, email, phone, department, street,
+                                city, city_code, postalcode, status_id_fk, ou_id_fk) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)"""
                         values = (
                             firstname, lastname, username, email, row['phone'], row['abteilung'],
                             row['street'], row['city'], row['city_code'], row['postalcode'],
